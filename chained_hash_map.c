@@ -23,18 +23,6 @@
 #define HASH_ARRAY_LEN 100
 #define STRING_LEN 128
 
-// union node{
-    // honestly, no idea why i decided to do it this way, not like
-    // i need the data to align to specific data anw :sob:
-    // char alignment[2 * STRING_LEN + sizeof(union node *)];
-    // struct{
-        // union node *next;
-        // char *key;
-        // char *value;
-    // } s;
-// };
-// typedef union node list_node;
-
 struct node {
     char *key;
     char *value;
