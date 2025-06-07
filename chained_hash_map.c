@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdio.h>
+#include <inttypes.h>
+
 #define HASH_ARRAY_LEN 100
 #define STRING_LEN 128
 
@@ -41,7 +44,7 @@ uint32_t hash_function(char *str) {
      * uint32_t since the worst case scenario would be 34 million z's which 
      * is overkill for the purposes of a simple implementation
      */
-    uint32_t hash = 0;
+    uint32_t hash = 1;
 
     for (char *c = str; *c != 0; c++) { // O(N) soln but who cares
         hash *= (int)*c;                // im not trying to optimize ts anyway
@@ -65,11 +68,16 @@ void add_pair(void *user_hash_map, char *key, char *value) {
      * This function just adds a key value pair into the given hashmap
      * Please don't put in garbage pointers, I have no idea how to 
      * vet those :')
+     * as it stands, there is absolutely no way to know if a func
+     * is adding in duplicates
      */
     current_hash_array = (list_header *)user_hash_map;
     
     uint32_t hash = hash_function(key);     // hash table magic
     uint32_t index = hash % HASH_ARRAY_LEN;
+
+    printf("hash: %" PRIu32 "\n", hash);
+    printf("index: %" PRIu32 "\n", index);
 
     list_header *current = current_hash_array + (index * sizeof(list_header));
     list_node *tmp;
@@ -110,6 +118,14 @@ char *get_value(void *user_hash_map, char *key) {
     uint32_t index = hash % HASH_ARRAY_LEN;
 
     list_header *current = current_hash_array + (index * sizeof(list_header));
+
+    list_node *p = current->head;
+    while (p != NULL) {
+        if (strcmp(p->s.key, key) == 0)
+            return p->s.value;
+        p = p->s.next;
+    }
+    return NULL;
 }
 
 int change_value(void *user_hash_map, char *key, char *value){
@@ -148,3 +164,42 @@ int delete_hash_table(void *user_hash_map) {
     current_hash_array = (list_header *)user_hash_map;  // repeated code
 }
 
+int main() {
+    list_header *table = make_hash_map();
+    list_header *p = table + (sizeof(list_header) * 28);
+
+    // testing the pair adding traversal
+
+    add_pair(table, "hello", "world");
+
+    printf("head key: %s\n", p->head->s.key);
+    printf("head value: %s\n", p->head->s.value);
+
+    add_pair(table, "olleh", "second entry");
+
+    printf("head key: %s\n", p->tail->s.key);
+    printf("head value: %s\n", p->tail->s.value);
+
+    // testing if the actual hash table alg works
+    
+    char key[] = "test";
+    char val[] = "vlue";
+
+    uint32_t hash = hash_function(key);
+    uint32_t idx = (hash % HASH_ARRAY_LEN);
+    list_header *index = table + (idx * sizeof(list_header));
+
+    add_pair(table, key, val);
+    printf("externally calced idx: %" PRIu32 "\n", idx);
+
+    printf("head key: %s\n", index->head->s.key);
+    printf("head value: %s\n", index->head->s.value);
+
+    printf("\ntesting get_value\n");
+
+    char hello[] = "hello";
+
+    printf("hello value: %s\n", get_value(table, hello));
+    printf("olleh value: %s\n", get_value(table, "olleh"));
+    printf("test value: %s\n", get_value(table, "test")); 
+}
