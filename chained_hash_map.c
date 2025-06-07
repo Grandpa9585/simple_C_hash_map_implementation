@@ -57,7 +57,7 @@ uint32_t hash_function(char *str) {
     return hash;
 }
 
-void *make_hash_map() {
+void *make_hash_map(void) {
     /*
      * Function allocates in heap an address for the hash map
      * no idea if the malloc is too large
@@ -221,76 +221,4 @@ int delete_hash_table(void *user_hash_map) {
     current_hash_array = NULL;
     user_hash_map = NULL;
     return 1;
-}
-
-int main() {
-    hash_map *table = make_hash_map();
-    
-    // testing the pair adding traversal
-    hash_map *p = table + (sizeof(hash_map) * 28);
-
-    add_pair(table, "hello", "world");
-
-    printf("head key: %s\n", p->head->key);
-    printf("head value: %s\n", p->head->value);
-
-    add_pair(table, "olleh", "second entry");
-
-    printf("head key: %s\n", p->tail->key);
-    printf("head value: %s\n", p->tail->value);
-
-    // testing if the actual hash table alg works
-    
-    char key[] = "test";
-    char val[] = "vlue";
-
-    uint32_t hash = hash_function(key);
-    uint32_t idx = (hash % HASH_ARRAY_LEN);
-    hash_map *index = table + (idx * sizeof(hash_map));
-
-    add_pair(table, key, val);
-    printf("externally calced idx: %" PRIu32 "\n", idx);
-
-    printf("head key: %s\n", index->head->key);
-    printf("head value: %s\n", index->head->value);
-
-    printf("\ntesting get_value\n");
-
-    char hello[] = "hello";
-
-    printf("hello value: %s\n", get_value(table, hello));
-    printf("olleh value: %s\n", get_value(table, "olleh"));
-    printf("test value: %s\n", get_value(table, "test")); 
-
-    printf("\ntesting change_value\n");
-
-    change_value(table, "hello", "not world");
-    change_value(table, "olleh", "dlrow");
-    change_value(table, "test", "some other value");
-
-    printf("hello value: %s\n", get_value(table, "hello"));
-    printf("olleh value: %s\n", get_value(table, "olleh"));
-    printf("test value: %s\n", get_value(table, "test")); 
-
-    printf("\ntesting remove_pair\n");
-
-    add_pair(table, "lleho", "just to add connectivity");
-    remove_pair(table, "olleh");
-    // test if traversal still works
-    printf("traversal test: %s\n", get_value(table, "lleho"));
-    remove_pair(table, "hello");
-    remove_pair(table, "test");
-    printf("removal done\n");
-
-    if (get_value(table, "olleh") == NULL) printf("successfully removed olleh\n");
-    if (get_value(table, "hello") == NULL) printf("successfully removed hello\n");
-    if (get_value(table, "test") == NULL) printf("successfully removed test\n");
-
-    add_pair(table, "lleho", "just to add connectivity");
-    add_pair(table, "olleh", "second entry");
-    add_pair(table, key, val);
-
-    delete_hash_table(table);
-
-    printf("%p\n", table); // well it segfaults when I call a get_value so close enough!
 }

@@ -36,6 +36,7 @@ Other notes/ To do
 I could probably easily implement a generic value hash table by doing void *  
 make add_pair do something about duplicates  
 all functions has no way to vet if there actually exists a hash_map  
+error checking and input checking, in general :sob:
 
 
 
