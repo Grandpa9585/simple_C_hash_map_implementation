@@ -23,3 +23,19 @@ hash collisons
         can cluster
 
 
+This hashmap will only take in a string key/ value pairs (up to a certain length)  
+because I do not hate myself nearly enough to implement a generic implementation  
+
+Limitations  
+string key/ value pairs  
+O(n) hash function  
+add_pair does nothing to stop duplicates from being added to the list  
+
+Other notes/ To do  
+(kind of done) I am certain I can get away with node not being aligned  
+I could probably easily implement a generic value hash table by doing void *  
+make add_pair do something about duplicates  
+all functions has no way to vet if there actually exists a hash_map  
+
+
+

@@ -23,17 +23,24 @@
 #define HASH_ARRAY_LEN 100
 #define STRING_LEN 128
 
-union node{
+// union node{
     // honestly, no idea why i decided to do it this way, not like
     // i need the data to align to specific data anw :sob:
-    struct{
-        char *key;
-        char *value;
-        union node *next;
-    } s;
-    char alignment[2 * STRING_LEN + sizeof(union node *)];
+    // char alignment[2 * STRING_LEN + sizeof(union node *)];
+    // struct{
+        // union node *next;
+        // char *key;
+        // char *value;
+    // } s;
+// };
+// typedef union node list_node;
+
+struct node {
+    char *key;
+    char *value;
+    struct node *next;
 };
-typedef union node list_node;
+typedef struct node list_node;
 
 typedef struct {
     /*
@@ -85,31 +92,29 @@ void add_pair(void *user_hash_map, char *key, char *value) {
     uint32_t hash = hash_function(key);     // hash table magic
     uint32_t index = hash % HASH_ARRAY_LEN;
 
-    printf("hash: %" PRIu32 "\n", hash);
-    printf("index: %" PRIu32 "\n", index);
-
     hash_map *current = current_hash_array + (index * sizeof(hash_map));
     list_node *tmp;
     char *tmp_key, *tmp_value;
                                             // hash collision stuffs
-    tmp = malloc(sizeof(list_node));        // make a list node reference
         
-    tmp_key = malloc(STRING_LEN);           // im going to have to free everything here later on arent I
-    tmp_value = malloc(STRING_LEN);
-    memcpy(tmp_key, key, STRING_LEN);
-    memcpy(tmp_value, value, STRING_LEN);
+    // char *tmp_value;
+    // char *tmp_key;           // im going to have to free everything here later on arent I
+    // memcpy(tmp_key, key, STRING_LEN);
+    // memcpy(tmp_value, value, STRING_LEN);
 
-    tmp->s.key = tmp_key;
-    tmp->s.value = tmp_value;
-    tmp->s.next = NULL;
+    tmp = malloc(sizeof(value) + sizeof(key) + sizeof(list_node *));        // make a list node reference
+
+    tmp->key = key;
+    tmp->value = value;
+    tmp->next = NULL;
 
     if (current->head == NULL)              // what the fuck is this
         current->head = tmp;
     else {
-        if (current->head->s.next == NULL) 
-            current->head->s.next = tmp;    
+        if (current->head->next == NULL) 
+            current->head->next = tmp;    
         if (current->tail != NULL)
-            current->tail->s.next = tmp;
+            current->tail->next = tmp;
         current->tail = tmp;
     }
 
@@ -131,11 +136,11 @@ char *get_value(void *user_hash_map, char *key) {
     list_node *p = current->head;
     while (p != NULL) {
         // printf("comparing %s and %s -> %d\n", p->s.key, key, strcmp(p->s.key, key));
-        if (strcmp(p->s.key, key) == 0) {
+        if (strcmp(p->key, key) == 0) {
             current_hash_array = NULL;
-            return p->s.value;
+            return p->value;
         }
-        p = p->s.next;
+        p = p->next;
     }
     current_hash_array = NULL;
     return NULL;
@@ -156,12 +161,12 @@ int change_value(void *user_hash_map, char *key, char *value){
 
     list_node *p = current->head;
     while (p != NULL) {
-        if (strcmp(p->s.key, key) == 0) {
+        if (strcmp(p->key, key) == 0) {
             current_hash_array = NULL;
-            p->s.value = value;
+            p->value = value;
             return 1;
         }
-        p = p->s.next;
+        p = p->next;
     }
     current_hash_array = NULL;
     return 0;
@@ -184,34 +189,20 @@ int remove_pair(void *user_hash_map, char *key) {
     list_node *p = current->head;
     list_node *prev = NULL;
     while (p != NULL) {
-        printf("\n");
-        printf("current key: %s, search key %s, result: %d\n", p->s.key, key, strcmp(p->s.key, key));
-        printf("p: %p\n", p);
-        printf("prev: %p\n", prev);
-
-        if (strcmp(p->s.key, key) == 0) {
-            printf("test print %p\n", p->s.value);
+        if (strcmp(p->key, key) == 0) {
             if (prev == NULL){
-                printf("prev is null\n");
-                current->head = p->s.next;
+                current->head = p->next;
             } else {
-                printf("prev is not null\n");
-                prev->s.next = p->s.next;
+                prev->next = p->next;
             }
-            printf("successfuly rerouted\n");
-            char *value_ptr = p->s.value;
-            printf("%p, %c, %s\n", value_ptr, value_ptr[0], value_ptr);
-            free(value_ptr);
-            printf("freed value\n");
-            free(p->s.key);
-            printf("freed key\n");
+            // free(p->key);
+            // free(p->value);       // ???????
             free(p);
-            printf("freed list_node\n");
             current_hash_array = NULL;
             return 1;
         }
         prev = p;
-        p = p->s.next;
+        p = p->next;
     }
     current_hash_array = NULL;
     return 0;
@@ -222,8 +213,26 @@ int delete_hash_table(void *user_hash_map) {
     /*
      * Takes in a reference to a hash map 
      * then dereference the whole table (slow)
+     * No idea how to vet non hash_map inputs
      */
     current_hash_array = (hash_map *)user_hash_map;  // repeated code
+
+    hash_map *start = current_hash_array;
+    for (hash_map *bucket = user_hash_map; bucket <= start + (HASH_ARRAY_LEN * sizeof(hash_map)); bucket += sizeof(hash_map)) {
+        if (bucket->head != NULL) {
+            list_node *head = bucket->head;
+            for (list_node *p = head; p != NULL; p = p->next) {
+                list_node *tmp = p;
+                // free(tmp->key);
+                // free(tmp->value);
+                free(tmp);
+            }
+        }
+    }
+    free(current_hash_array);
+    current_hash_array = NULL;
+    user_hash_map = NULL;
+    return 1;
 }
 
 int main() {
@@ -234,13 +243,13 @@ int main() {
 
     add_pair(table, "hello", "world");
 
-    printf("head key: %s\n", p->head->s.key);
-    printf("head value: %s\n", p->head->s.value);
+    printf("head key: %s\n", p->head->key);
+    printf("head value: %s\n", p->head->value);
 
     add_pair(table, "olleh", "second entry");
 
-    printf("head key: %s\n", p->tail->s.key);
-    printf("head value: %s\n", p->tail->s.value);
+    printf("head key: %s\n", p->tail->key);
+    printf("head value: %s\n", p->tail->value);
 
     // testing if the actual hash table alg works
     
@@ -254,8 +263,8 @@ int main() {
     add_pair(table, key, val);
     printf("externally calced idx: %" PRIu32 "\n", idx);
 
-    printf("head key: %s\n", index->head->s.key);
-    printf("head value: %s\n", index->head->s.value);
+    printf("head key: %s\n", index->head->key);
+    printf("head value: %s\n", index->head->value);
 
     printf("\ntesting get_value\n");
 
@@ -280,7 +289,7 @@ int main() {
     add_pair(table, "lleho", "just to add connectivity");
     remove_pair(table, "olleh");
     // test if traversal still works
-    printf("traversal test: %s", get_value(table, "lleho"));
+    printf("traversal test: %s\n", get_value(table, "lleho"));
     remove_pair(table, "hello");
     remove_pair(table, "test");
     printf("removal done\n");
@@ -289,4 +298,11 @@ int main() {
     if (get_value(table, "hello") == NULL) printf("successfully removed hello\n");
     if (get_value(table, "test") == NULL) printf("successfully removed test\n");
 
+    add_pair(table, "lleho", "just to add connectivity");
+    add_pair(table, "olleh", "second entry");
+    add_pair(table, key, val);
+
+    delete_hash_table(table);
+
+    printf("%p\n", table); // well it segfaults when I call a get_value so close enough!
 }
